@@ -1,0 +1,6 @@
+[
+  {"name":"1-cover.jpg","query":"?shot=cover&caption=CORAL%20HEAT&layout=hero-left&grade=miami-heat&intensity=100","w":1080,"h":1080},
+  {"name":"2-editor.jpg","query":"?shot=editor&caption=CORAL%20HEAT","w":1280,"h":720},
+  {"name":"3-cover.jpg","query":"?shot=cover&caption=CORAL%20HEAT&layout=tiled-grid&grade=sunset-punch&intensity=100","w":1024,"h":1280},
+  {"name":"4-cover.jpg","query":"?shot=cover&caption=CORAL%20HEAT&layout=slash-panels&grade=neon-coast&intensity=100","w":1080,"h":1080}
+]
