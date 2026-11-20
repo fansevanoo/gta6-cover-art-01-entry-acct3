@@ -1,0 +1,1066 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' blob: data:; connect-src 'self'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; base-uri 'none'; form-action 'none'">
+<title>Coral Heat / Cover Studio</title>
+<style>
+:root{color-scheme:dark;--ink:#110e15;--paper:#1b161f;--line:#3d2b40;--cream:#fff0d8;--muted:#c2aabe;--hot:#ff805e;--gold:#ffd28d;font:14px system-ui,sans-serif}
+*{box-sizing:border-box}body{margin:0;background:var(--ink);color:var(--cream)}button,input,select{font:inherit;color:inherit}button,select,input[type=text]{background:#251c2b;border:1px solid var(--line);border-radius:7px;padding:8px 10px;min-width:0}button{cursor:pointer;font-weight:650}button:hover{border-color:var(--hot)}button:disabled{opacity:.4;cursor:default}:focus-visible{outline:2px solid var(--gold);outline-offset:2px}input[type=range],input[type=checkbox]{accent-color:var(--hot);min-width:0}input[type=range]{width:100%}button.primary{background:var(--hot);color:#21101b;border-color:transparent}
+header{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:12px 22px;border-bottom:1px solid var(--line);background:#1a141e}.brand{display:flex;align-items:center;gap:11px}.brand b{font-family:Impact,'Arial Black',sans-serif;font-size:23px;letter-spacing:.055em}.brand span,.eyebrow,summary,.meta{font:700 11px ui-monospace,monospace;letter-spacing:.12em;text-transform:uppercase}.brand span,.eyebrow{color:var(--gold)}.brand i{width:23px;height:23px;border-radius:50%;background:repeating-linear-gradient(0deg,#100b16 0 2px,transparent 2px 5px),linear-gradient(#ffdb81,#ff4c89)}
+.actions,.row{display:flex;align-items:center;gap:7px;flex-wrap:wrap}.workspace{display:grid;grid-template-columns:minmax(245px,292px) minmax(0,1fr) minmax(215px,254px);min-height:calc(100dvh - 64px)}aside{padding:16px;background:var(--paper);min-width:0}.left{border-right:1px solid var(--line)}.right{border-left:1px solid var(--line)}section,details{margin:0 0 15px}h2{font-size:14px;margin:0 0 9px}.field{display:grid;gap:4px;margin:7px 0;color:var(--muted);font-size:12px}.field input,.field select{color:var(--cream)}.pair{display:grid;grid-template-columns:1fr 1fr;gap:7px}.drop{width:100%;border:1px dashed #825769;color:var(--gold);padding:10px;background:#2b1d2b}.dragging .drop{outline:2px solid var(--hot)}.thumbs{display:flex;flex-wrap:wrap;gap:5px;margin:8px 0}.thumbs button{padding:0;overflow:hidden;width:34px;height:40px}.thumbs img{display:block;width:100%;height:100%;object-fit:cover}.thumbs button[aria-pressed=true],.panels button[aria-pressed=true]{border-color:var(--gold);color:var(--gold)}details{border-top:1px solid var(--line);padding-top:10px}summary{cursor:pointer;color:var(--gold);margin-bottom:8px}.checks{display:grid;grid-template-columns:1fr 1fr;gap:5px}.checks label{font-size:12px}.muted,#status{color:var(--muted);font-size:12px;margin:5px 0}.panels{display:grid;grid-template-columns:repeat(6,1fr);gap:4px}.panels button{padding:6px 0}.export{display:grid;gap:7px}.stage{min-width:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:14px;background:radial-gradient(ellipse at 50% 40%,#39243e,#160f1c 72%)}.stage canvas{display:block;width:auto;height:auto;max-width:100%;max-height:calc(100dvh - 125px);border:1px solid #674353;box-shadow:0 15px 50px #0d0811b0;touch-action:none;cursor:grab}.stage canvas:active{cursor:grabbing}.stagebar{display:flex;justify-content:space-between;gap:12px;color:var(--muted);width:100%;max-width:640px}
+body.cover{overflow:hidden;background:#130b17}.cover header,.cover aside,.cover .stagebar{display:none}.cover .workspace{display:grid;grid-template-columns:1fr;place-items:center;width:100vw;height:100dvh;padding:0}.cover .stage{display:grid;place-items:center;width:100vw;height:100dvh;padding:0}.cover .stage canvas{width:100vw;height:100dvh;max-width:none;max-height:none;border:0;box-shadow:none;cursor:default}
+@media(max-width:1000px){.workspace{grid-template-columns:220px minmax(0,1fr) 193px}aside{padding:11px}}
+@media(max-width:740px){header{padding:9px;flex-wrap:wrap}.workspace{grid-template-columns:1fr 1fr}.stage{grid-column:1/-1;grid-row:1}.stage canvas{max-height:64dvh}.left,.right{border-top:1px solid var(--line)}}
+@media(max-width:400px){.workspace{grid-template-columns:1fr}.stage{grid-column:1}}
+</style>
+</head>
+<body>
+<header>
+  <div class="brand"><i aria-hidden="true"></i><div><b>CORAL HEAT</b><br><span>Cover studio</span></div></div>
+  <div class="actions">
+    <button id="undo" title="Ctrl or Command + Z">Undo</button>
+    <button id="redo" title="Ctrl or Command + Shift + Z">Redo</button>
+    <button id="surprise" class="primary">Surprise me</button>
+    <button id="reset">Reset</button>
+  </div>
+</header>
+<main class="workspace">
+  <aside class="left" aria-label="Cover design">
+    <section>
+      <h2>Photo roll</h2>
+      <input id="files" type="file" accept="image/*,.heic,.heif" multiple hidden>
+      <button id="pick" class="drop">＋ Add photos · drop or paste</button>
+      <div id="thumbs" class="thumbs"></div>
+      <div class="row"><button id="remove">Remove photo</button><button id="demo">Empty roll</button></div>
+      <p id="status" role="status">Loading sample photos…</p>
+    </section>
+    <section>
+      <h2>Composition</h2>
+      <label class="field">Panel layout<select id="layout"></select></label>
+      <label class="field">Color grade<select id="grade"></select></label>
+      <label class="field"><span>Grade strength · <output id="level"></output></span><input type="range" id="intensity" min="0" max="100"></label>
+    </section>
+    <section>
+      <h2>Title treatment</h2>
+      <label class="field">Title<input id="title" type="text" maxlength="48"></label>
+      <label class="field">Subtitle<input id="subtitle" type="text" maxlength="64"></label>
+      <div class="pair">
+        <label class="field">Title font<select id="titleFont"></select></label>
+        <label class="field">Subtitle font<select id="subFont"></select></label>
+      </div>
+    </section>
+    <details>
+      <summary>Poster furniture</summary>
+      <div id="checks" class="checks"></div>
+      <label class="field">Location<input id="location" type="text" maxlength="34"></label>
+      <div class="pair">
+        <label class="field">Heat badge<input id="heat" type="text" maxlength="12"></label>
+        <label class="field">Seal<input id="seal" type="text" maxlength="18"></label>
+      </div>
+      <label class="field">Press quote<input id="quote" type="text" maxlength="58"></label>
+      <label class="field">Press credit<input id="credit" type="text" maxlength="32"></label>
+      <label class="field">Billing<input id="billing" type="text" maxlength="85"></label>
+      <div class="pair">
+        <label class="field">Rating<input id="rating" type="text" maxlength="3"></label>
+        <label class="field">Corner mark<input id="mark" type="text" maxlength="12"></label>
+      </div>
+    </details>
+  </aside>
+  <div class="stage">
+    <div class="stagebar meta"><span>Live cover</span><span id="stageLabel"></span></div>
+    <canvas id="cover" width="1080" height="1080" aria-label="Live cover preview. Select a panel with the numbered controls."></canvas>
+    <div class="stagebar meta"><span>Coral County · Cover Studio</span><span id="dimensions"></span></div>
+  </div>
+  <aside class="right" aria-label="Panel and export">
+    <section>
+      <h2>Panel crop</h2>
+      <div id="panels" class="panels"></div>
+      <label class="field">Photo<select id="panelPhoto"></select></label>
+      <label class="field">Horizontal pan<input id="panX" type="range" min="-100" max="100"></label>
+      <label class="field">Vertical pan<input id="panY" type="range" min="-100" max="100"></label>
+      <label class="field">Zoom<input id="zoom" type="range" min="100" max="300"></label>
+      <div class="row"><button id="flip" aria-pressed="false">Flip</button><button id="cropReset">Recenter</button></div>
+      <label class="field">Swap with<select id="swap"></select></label>
+      <p class="muted">Drag to pan. Shift + scroll to zoom.</p>
+    </section>
+    <section class="export">
+      <h2>Export</h2>
+      <label class="field">Preview ratio<select id="ratio"><option value="square">Square · 1080 × 1080</option><option value="portrait">Portrait · 1080 × 1350</option><option value="wide">Wide · 1920 × 1080</option></select></label>
+      <button id="download" class="primary">Download PNG</button>
+      <button id="downloadAll">Download all three · ZIP</button>
+    </section>
+    <details>
+      <summary>Keyboard shortcuts</summary>
+      <p class="muted">1–9 select panel. Arrow keys pan. + / − zoom. F flips. Ctrl / ⌘ + Z undoes, Shift + Ctrl / ⌘ + Z redoes. Ctrl / ⌘ + S exports.</p>
+    </details>
+  </aside>
+</main>
+<script>
+'use strict';
+const $ = id => document.getElementById(id);
+const canvas = $('cover');
+const params = new URLSearchParams(location.search);
+const coverOnly = params.get('shot') === 'cover';
+const shot = coverOnly || params.get('shot') === 'editor';
+document.body.classList.toggle('cover', coverOnly);
+window.__shotReady = false;
+
+const samples = {
+  'cast-boss': ['samples/cast-boss.jpg', 'THE BOSS'],
+  'cast-driver': ['samples/cast-driver.jpg', 'THE GETAWAY'],
+  'cast-insider': ['samples/cast-insider.jpg', 'THE INSIDER'],
+  'cast-rider': ['samples/cast-rider.jpg', 'THE RIDER'],
+  pier: ['samples/pier.jpg', 'THE LOOKOUT'],
+  boulevard: ['samples/boulevard.jpg', 'THE DRIVER']
+};
+const layouts = {
+  'hero-left': 'Hero Left',
+  'tiled-grid': 'Classic Tiled Grid',
+  'slash-panels': 'Slash',
+  'hero-shards': 'Hero + 5 Shards',
+  'whole-cast': 'Whole Cast',
+  'six-panel-hero': 'Six-Panel Hero',
+  'comic-slash': 'Comic Slash',
+  billboard: 'Billboard',
+  'split-diagonal': 'Split Diagonal'
+};
+const grades = {
+  'miami-heat': ['Miami Heat', '#ffb467', '#a92268', '#310b4b', 1.26, 1.06, .31],
+  'sunset-punch': ['Sunset Punch', '#ff9a53', '#ea5366', '#411b58', 1.3, 1.12, .28],
+  'neon-coast': ['Neon Coast', '#69fff0', '#d631a3', '#291a72', 1.39, 1.1, .34],
+  'vice-dawn': ['Vice Dawn', '#ffd6b4', '#af9cdf', '#493364', 1.08, .97, .28],
+  'golden-hour': ['Golden Hour', '#ffda83', '#b67132', '#513050', 1.14, 1.02, .24],
+  'poster-ink': ['Poster Ink · skin-safe', '#ffc990', '#98667e', '#2c1741', .91, 1.19, .10],
+  'coral-haze': ['Coral Haze', '#ffadbb', '#df567f', '#543566', 1.13, .92, .33],
+  'after-hours': ['After Hours', '#82a9ff', '#693572', '#141d4c', 1.02, 1.23, .37]
+};
+const titleFonts = {
+  impact: ['Block', 'Impact, "Arial Black", system-ui, sans-serif'],
+  heavy: ['Heavy', '"Arial Black", system-ui, sans-serif'],
+  serif: ['Serif', 'Georgia, serif']
+};
+const subFonts = {
+  script: ['Script', '"Brush Script MT", "URW Chancery L", "Segoe Script", cursive, Georgia'],
+  italic: ['Italic', 'Georgia, serif'],
+  modern: ['Modern', 'system-ui, sans-serif']
+};
+const toggles = {
+  tags:'Role tags', heat:'Heat pill', seal:'Pre-order seal', location:'Location chip',
+  quote:'Press quote', palms:'Palm band', billing:'Billing', rating:'Rating box',
+  mark:'Corner mark', barcode:'Barcode'
+};
+const sizes = {square:[1080,1080], portrait:[1080,1350], wide:[1920,1080]};
+const settings = ['layout','grade','intensity','title','subtitle','titleFont','subFont','location',
+  'heat','seal','quote','credit','billing','rating','mark','ratio'];
+const photos = new Map();
+const initialIds = Object.keys(samples);
+const sampleName = params.get('photo');
+const explicitPhoto = Object.hasOwn(samples, sampleName);
+const requestedIds = explicitPhoto ? [sampleName] : initialIds;
+const storageKey = 'coral-heat-studio-v1';
+const canSave = !shot && !params.size;
+const emptyCrop = () => ({photo:null, x:0, y:0, zoom:100, flip:false});
+const clamp = (n, min, max) => Math.min(max, Math.max(min, n));
+let selected = 0, regions = [], drag = null, busy = false, edit = null;
+let past = [], future = [], shownRoll = '';
+let ready = false, dbPromise;
+function defaults(roll = requestedIds.filter(id => photos.has(id))) {
+  return {
+    title:'CORAL HEAT', subtitle:'One Coastline, Six Stories', layout:'hero-left',
+    grade:'miami-heat', intensity:100, titleFont:'impact', subFont:'script', ratio:'square',
+    location:'CORAL COUNTY / FL', heat:'HEAT', seal:'PRE-ORDER',
+    quote:'A five-star fever dream.', credit:'THE CORAL STANDARD',
+    billing:'SABLE COAST PICTURES  /  A CORAL COUNTY STORY  /  ORIGINAL COVER EDITION',
+    rating:'M', mark:'CH / VI', enabled:Object.fromEntries(Object.keys(toggles).map(key => [key,true])),
+    roll:[...roll], crops:Array.from({length:9}, emptyCrop)
+  };
+}
+let state = defaults([]);
+const status = message => { $('status').textContent = message; };
+
+function rect(x,y,w,h) { return [[x,y],[x+w,y],[x+w,y+h],[x,y+h]]; }
+function grid(rows, columns) {
+  return Array.from({length:rows*columns}, (_, i) =>
+    rect((i%columns)/columns, Math.floor(i/columns)/rows, 1/columns, 1/rows));
+}
+function polygons(id, aspect) {
+  const wide = aspect > 1.32;
+  const portrait = aspect < .9;
+  if (id === 'hero-left') {
+    const split = wide ? .55 : .53;
+    const first = wide ? .38 : .37;
+    const mid = wide ? .58 : .56;
+    const half = split + (1-split)*.49;
+    const heroBottom = wide ? .565 : .575;
+    const edge = y => split+.045-.070*y/heroBottom;
+    return [
+      [[0,0],[edge(0),0],[edge(heroBottom),heroBottom],[0,heroBottom+.027]],
+      [[edge(0),0],[1,0],[1,first],[edge(first),first]],
+      [[edge(first),first],[half,first],[half-.015,mid],[edge(mid),mid]],
+      [[half,first],[1,first],[1,mid],[half-.015,mid]],
+      [[edge(mid),mid],[1,mid],[1,1],[split-.052,1],[edge(heroBottom),heroBottom]],
+      [[0,heroBottom+.027],[edge(heroBottom),heroBottom],[split-.052,1],[0,1]]
+    ];
+  }
+  if (id === 'tiled-grid') return wide ? grid(2,3) : grid(3,2);
+  if (id === 'slash-panels') {
+    const row = portrait ? .49 : .53;
+    return [
+      [[0,0],[.39,0],[.26,row],[0,row]],
+      [[.39,0],[.72,0],[.60,row],[.26,row]],
+      [[.72,0],[1,0],[1,row],[.60,row]],
+      [[0,row],[.35,row],[.23,1],[0,1]],
+      [[.35,row],[.70,row],[.60,1],[.23,1]],
+      [[.70,row],[1,row],[1,1],[.60,1]]
+    ];
+  }
+  if (id === 'hero-shards') return [
+    [[0,0],[.75,0],[.64,.53],[0,.64]],
+    [[.75,0],[1,0],[1,.31],[.685,.31]],
+    [[.685,.31],[1,.31],[1,.47],[.64,.53]],
+    [[0,.64],[.32,.585],[.27,1],[0,1]],
+    [[.32,.585],[.64,.53],[.67,1],[.27,1]],
+    [[.64,.53],[1,.47],[1,1],[.67,1]]
+  ];
+  if (id === 'whole-cast') return grid(3,3).map(poly =>
+    poly.map(([x,y]) => [x, y < .01 ? 0 : y < .4 ? (wide ? .30 : .34) : y < .8 ? .62 : 1]));
+  if (id === 'six-panel-hero') {
+    const top = wide ? .61 : .54;
+    return [rect(.25,0,.50,top),rect(0,0,.25,top),rect(.75,0,.25,top),
+      ...Array.from({length:3}, (_,i) => rect(i/3,top,1/3,1-top))];
+  }
+  if (id === 'comic-slash') return [
+    [[0,0],[.58,0],[.47,.47],[0,.39]], [[.58,0],[1,0],[1,.31],[.53,.21]],
+    [[.53,.21],[1,.31],[1,.56],[.47,.47]], [[0,.39],[.30,.441],[.21,1],[0,1]],
+    [[.30,.441],[.70,.512],[.64,1],[.21,1]], [[.70,.512],[1,.56],[1,1],[.64,1]]
+  ];
+  if (id === 'billboard') {
+    const top = wide ? .62 : .60;
+    return [rect(0,0,1,top), ...Array.from({length:5}, (_,i) => rect(i/5,top,.2,1-top))];
+  }
+  return [
+    [[0,0],[.53,0],[.80,.36],[0,.42]], [[.53,0],[1,0],[1,.345],[.80,.36]],
+    [[0,.42],[.42,.389],[.56,.625],[0,.67]], [[.42,.389],[1,.345],[1,.59],[.56,.625]],
+    [[0,.67],[.56,.625],[.80,1],[0,1]], [[.56,.625],[1,.59],[1,1],[.80,1]]
+  ];
+}
+function photoId(project, i) {
+  const crop = project.crops[i];
+  return project.roll.includes(crop.photo) ? crop.photo : project.roll[i % project.roll.length];
+}
+function path(ctx, points) {
+  ctx.beginPath();
+  points.forEach(([x,y], i) => i ? ctx.lineTo(x,y) : ctx.moveTo(x,y));
+  ctx.closePath();
+}
+function bounds(points) {
+  const xs = points.map(p => p[0]), ys = points.map(p => p[1]);
+  const x = Math.min(...xs), y = Math.min(...ys);
+  return {x,y,w:Math.max(...xs)-x,h:Math.max(...ys)-y};
+}
+function box(ctx,x,y,w,h,color) {
+  ctx.fillStyle = color;
+  ctx.fillRect(x,y,w,h);
+}
+function round(ctx,x,y,w,h,r,color) {
+  ctx.beginPath();
+  ctx.roundRect(x,y,w,h,r);
+  ctx.fillStyle = color;
+  ctx.fill();
+}
+function gradient(ctx,x,y,x2,y2,stops) {
+  const fill = ctx.createLinearGradient(x,y,x2,y2);
+  stops.forEach(([at,c]) => fill.addColorStop(at,c));
+  return fill;
+}
+function lettering(ctx,text,x,y,size,options={}) {
+  const {color='#ffeac0', font='monospace', align='left', weight=700, max}=options;
+  ctx.save();
+  ctx.font = `${weight} ${size}px ${font}`;
+  ctx.textAlign = align;
+  ctx.textBaseline = 'alphabetic';
+  ctx.fillStyle = color;
+  if (max) ctx.fillText(text,x,y,max);
+  else ctx.fillText(text,x,y);
+  ctx.restore();
+}
+function polygonFill(ctx,points,color) {
+  path(ctx,points);
+  ctx.fillStyle=color;
+  ctx.fill();
+}
+function palm(ctx,x,y,height,lean,color) {
+  ctx.save(); ctx.translate(x,y); ctx.scale(height,height);
+  ctx.fillStyle = color;
+  ctx.beginPath(); ctx.moveTo(-.035,0);
+  ctx.quadraticCurveTo(lean*.28,-.50,lean,-1);
+  ctx.lineTo(lean+.028,-1);
+  ctx.quadraticCurveTo(lean*.4,-.52,.048,0);
+  ctx.fill();
+  for (const [dx,dy,tip] of [[-.58,.15,-.25],[-.48,-.08,-.26],[-.20,-.38,-.16],
+    [.34,-.30,.05],[.59,-.02,.22],[.49,.24,.23],[-.31,.36,-.15]]) {
+    ctx.beginPath(); ctx.moveTo(lean,-1);
+    ctx.quadraticCurveTo(lean+dx*.53,-1+tip,lean+dx,-1+dy);
+    ctx.quadraticCurveTo(lean+dx*.63,-1+tip+.12,lean,-.96);
+    ctx.fill();
+  }
+  ctx.restore();
+}
+const demoColors = [
+  ['#f9a461','#bd3d6b','#252043'], ['#ffa268','#993b82','#191c39'],
+  ['#f7cf85','#ba5364','#26384c'], ['#ef8bc5','#653a91','#201635'],
+  ['#f9cc91','#db6562','#37446b'], ['#f58e86','#833e79','#321a3b']
+];
+function demoArt(ctx,r,index) {
+  const [sun,mid,deep] = demoColors[index%6];
+  ctx.save(); ctx.translate(r.x,r.y); ctx.scale(r.w/300,r.h/240);
+  box(ctx,0,0,300,240,gradient(ctx,0,0,0,240,[[0,deep],[.64,mid],[1,sun]]));
+  ctx.beginPath(); ctx.arc(106+index*16,86-index*3,42-index*2,0,Math.PI*2);
+  ctx.fillStyle=sun; ctx.fill();
+  for (let j=0;j<11;j++) {
+    const high=12+(j*19+index*13)%49;
+    box(ctx,j*30,152-high,20,high,deep);
+    if (j%2===0) box(ctx,j*30+4,154-high,3,4,sun);
+  }
+  box(ctx,0,152,300,88,gradient(ctx,0,152,0,240,[[0,mid],[1,deep]]));
+  for (let j=0;j<9;j++) box(ctx,35+(j*61)%185,159+j*6,12+(j*13)%65,1,sun+'77');
+  if (index%6===0) { palm(ctx,28,241,180,.31,deep); palm(ctx,264,230,118,-.19,deep); }
+  if (index%6===1) {
+    polygonFill(ctx,[[0,240],[102,149],[142,149],[258,240]],'#1b1327');
+    polygonFill(ctx,[[122,181],[129,181],[160,239],[147,239]],sun);
+  }
+  if (index%6===2) {
+    polygonFill(ctx,[[49,202],[115,176],[151,176],[137,201]],deep);
+    polygonFill(ctx,[[103,183],[105,115],[140,168]],sun);
+  }
+  if (index%6===3) for(let j=0;j<4;j++) {
+    box(ctx,57+j*55,37+j*14,10,204,deep);
+    box(ctx,45+j*55,46+j*14,34,4,sun);
+  }
+  if (index%6===4) {
+    box(ctx,0,160,300,8,deep);
+    for(let j=0;j<6;j++) box(ctx,12+j*53,162,6,78,deep);
+  }
+  if (index%6===5) {
+    polygonFill(ctx,[[0,240],[0,180],[66,137],[134,184],[200,124],[300,201],[300,240]],deep);
+    palm(ctx,224,230,125,-.18,'#170f23');
+  }
+  ctx.restore();
+}
+function drawPhoto(ctx,r,asset,crop,grade,strength) {
+  const {image, focus} = asset;
+  const scale = Math.max(r.w/image.width,r.h/image.height)*crop.zoom/100;
+  const w=image.width*scale, h=image.height*scale;
+  const faceX=r.w/2-w*focus.x, faceY=r.h*(focus.face ? .37 : .46)-h*focus.y;
+  const dx=clamp(faceX + crop.x/100*(w-r.w),r.w-w,0);
+  const dy=clamp(faceY + crop.y/100*(h-r.h),r.h-h,0);
+  ctx.save(); ctx.translate(r.x+(crop.flip?r.w:0),r.y); ctx.scale(crop.flip?-1:1,1);
+  const [, , , , sat, contrast] = grade;
+  ctx.filter = `saturate(${1+(sat-1)*strength}) contrast(${1+(contrast-1)*strength})`;
+  ctx.drawImage(image,dx,dy,w,h);
+  ctx.restore();
+}
+function roleTag(ctx, label, poly, unit, frame, titleStart) {
+  const r=bounds(poly);
+  const width=(label.length*8.2+22)*unit, height=23*unit;
+  ctx.save();
+  path(ctx,poly);
+  for(let y=r.y+13*unit;y+height<Math.min(r.y+r.h,titleStart-8*unit);y+=7*unit) {
+    for(let x=Math.max(r.x+9*unit,frame+9*unit);x+width<r.x+r.w-5*unit;x+=5*unit) {
+      const inside=[[x-3*unit,y-3*unit],[x+width+3*unit,y-3*unit],
+        [x-3*unit,y+height+3*unit],[x+width+3*unit,y+height+3*unit]]
+        .every(([px,py])=>ctx.isPointInPath(px,py));
+      if(!inside) continue;
+      round(ctx,x,y,width,height,5*unit,'#201123ed');
+      lettering(ctx,label,x+10*unit,y+16*unit,13*unit,{color:'#ffda99'});
+      ctx.restore();
+      return;
+    }
+  }
+  ctx.restore();
+}
+function burst(ctx,x,y,unit,text,warm,cool) {
+  const points=(outer,inner)=>Array.from({length:36},(_,i)=>{
+    const theta=i*Math.PI/18-Math.PI/2, radius=(i%2 ? inner : outer)*unit;
+    return [x+Math.cos(theta)*radius,y+Math.sin(theta)*radius];
+  });
+  polygonFill(ctx,points(74,60),'#1e0c24');
+  polygonFill(ctx,points(67,55),gradient(ctx,x,y-55*unit,x,y+62*unit,[[0,'#fff0ad'],[.56,warm],[1,cool]]));
+  ctx.save();
+  ctx.translate(x,y);ctx.rotate(-.14);
+  lettering(ctx,text,0,4*unit,15*unit,{align:'center',color:'#351531',max:104*unit});
+  lettering(ctx,'★  ★  ★',0,-17*unit,12*unit,{align:'center',color:'#351531'});
+  lettering(ctx,'COVER EDITION',0,21*unit,8*unit,{align:'center',color:'#351531'});
+  ctx.restore();
+}
+function lockup(ctx,project,x,y,maxWidth,size,unit,warm,cool) {
+  const font=titleFonts[project.titleFont][1];
+  ctx.save();
+  ctx.translate(x,y);
+  ctx.font=`1000 ${size}px ${font}`;
+  ctx.textAlign='center';ctx.textBaseline='alphabetic';ctx.lineJoin='round';
+  const text=project.title.toUpperCase().trim();
+  if (text) {
+    const fit=Math.min(1,maxWidth/ctx.measureText(text).width);
+    ctx.save();ctx.scale(fit,1);
+    for(let layer=18;layer>=1;layer--) {
+      ctx.lineWidth=(15+layer*.08)*unit;
+      ctx.strokeStyle=layer>12?'#150c1d':layer>6?'#411334':'#682047';
+      ctx.strokeText(text,layer*.47*unit,layer*.80*unit);
+    }
+    ctx.strokeStyle='#190c22';ctx.lineWidth=15*unit;ctx.strokeText(text,0,0);
+    ctx.strokeStyle='#ffda9c';ctx.lineWidth=5*unit;ctx.strokeText(text,0,0);
+    ctx.fillStyle=gradient(ctx,0,-size*.75,0,1,[[0,'#fff4cb'],[.27,'#ffd284'],
+      [.55,warm],[.76,cool],[1,'#a63e85']]);
+    ctx.fillText(text,0,0);
+    ctx.restore();
+  }
+  if(project.subtitle.trim()) {
+    const subSize=(project.subFont==='modern'?39:52)*unit;
+    ctx.font=`${project.subFont==='modern'?'700':'italic 700'} ${subSize}px ${subFonts[project.subFont][1]}`;
+    const sy=52*unit;
+    ctx.rotate(-.025);
+    ctx.strokeStyle='#35122f';ctx.lineWidth=9*unit;
+    ctx.strokeText(project.subtitle,0,sy,maxWidth*.92);
+    ctx.shadowColor='#ff4b9f';ctx.shadowBlur=16*unit;
+    ctx.fillStyle='#ffd8ee';ctx.fillText(project.subtitle,0,sy,maxWidth*.92);
+    ctx.shadowBlur=0;
+    ctx.strokeStyle='#ff8eae';ctx.lineWidth=2*unit;
+    ctx.beginPath();ctx.moveTo(-106*unit,sy+12*unit);
+    ctx.quadraticCurveTo(-26*unit,sy+22*unit,110*unit,sy+5*unit);ctx.stroke();
+  }
+  ctx.restore();
+}
+function render(target, project, interactive=false) {
+  const width=target.width, height=target.height, aspect=width/height;
+  const unit=Math.min(width,height)/1080;
+  const ctx=target.getContext('2d');
+  const grade=grades[project.grade], strength=project.intensity/100;
+  const [,warm,cool,deep]=grade;
+  const frame=20*unit, artX=frame, artY=frame;
+  const artW=width-2*frame, artH=height-2*frame;
+  const titleY=height-(aspect>1.32?231:245)*unit;
+  const titleSize=(aspect>1.32?164:153)*unit;
+  const showTitle=Boolean(project.title.trim() || project.subtitle.trim());
+  box(ctx,0,0,width,height,'#190e20');
+  const pieces=polygons(project.layout,aspect).map(poly =>
+    poly.map(([x,y])=>[artX+x*artW,artY+y*artH]));
+  if(interactive) regions=pieces;
+  ctx.save();
+  ctx.beginPath();ctx.rect(artX,artY,artW,artH);ctx.clip();
+  pieces.forEach((poly,i)=>{
+    const r=bounds(poly), id=photoId(project,i), asset=photos.get(id);
+    ctx.save();path(ctx,poly);ctx.clip();
+    if(asset) drawPhoto(ctx,r,asset,project.crops[i],grade,strength);
+    else demoArt(ctx,r,i);
+    if(strength) {
+      ctx.globalCompositeOperation='soft-light';
+      ctx.globalAlpha=strength*(project.grade==='poster-ink' ? .38 : .79);
+      box(ctx,r.x,r.y,r.w,r.h,gradient(ctx,r.x,r.y,r.x+r.w*.65,r.y+r.h,
+        [[0,warm],[.48,'#f6ae83'],[1,deep]]));
+      ctx.globalCompositeOperation='source-over';
+      ctx.globalAlpha=strength*grade[6];
+      box(ctx,r.x,r.y,r.w,r.h,gradient(ctx,r.x,r.y,r.x,r.y+r.h,
+        [[0,warm],[.44,'#00000000'],[.78,cool],[1,deep]]));
+    }
+    ctx.restore();
+  });
+  pieces.forEach(poly=>{
+    path(ctx,poly);
+    ctx.lineJoin='round';ctx.lineWidth=9*unit;ctx.strokeStyle='#181020';ctx.stroke();
+    ctx.lineWidth=1.6*unit;ctx.strokeStyle='#ffd29a80';ctx.stroke();
+  });
+  const shadeTop=titleY-titleSize*.79;
+  box(ctx,artX,shadeTop-23*unit,artW,height-shadeTop,
+    gradient(ctx,0,shadeTop-23*unit,0,height-frame,
+      [[0,'#1b0d2200'],[.38,'#1f102e76'],[.72,'#22102bd9'],[1,'#170e1e']]));
+  if(project.enabled.palms) {
+    const y=height-74*unit;
+    palm(ctx,width*.063,y,144*unit,.24,'#28142e');
+    palm(ctx,width*.105,y,92*unit,.19,'#2d1734');
+    palm(ctx,width*.947,y,162*unit,-.24,'#28142e');
+    palm(ctx,width*.9,y,97*unit,-.21,'#2d1734');
+  }
+  if(project.enabled.tags) pieces.forEach((poly,i)=>{
+    const id=photoId(project,i), role=samples[id]?.[1];
+    if(role) roleTag(ctx,role,poly,unit,frame,shadeTop);
+  });
+  const badgeY=frame+48*unit;
+  const heatW=project.enabled.heat && project.heat.trim()?108*unit:0;
+  if(heatW) {
+    round(ctx,width-frame-15*unit-heatW,badgeY,heatW,30*unit,15*unit,'#ff794f');
+    lettering(ctx,project.heat.toUpperCase(),width-frame-15*unit-heatW/2,badgeY+20*unit,14*unit,
+      {align:'center',color:'#32122a',max:92*unit});
+  }
+  if(project.enabled.location && project.location.trim()) {
+    ctx.font=`700 ${13*unit}px monospace`;
+    const chipW=Math.min(270*unit,ctx.measureText(project.location.toUpperCase()).width+27*unit);
+    const right=width-frame-15*unit-(heatW?heatW+7*unit:0);
+    round(ctx,right-chipW,badgeY,chipW,30*unit,5*unit,'#211327ef');
+    lettering(ctx,project.location.toUpperCase(),right-chipW/2,badgeY+20*unit,13*unit,
+      {align:'center',color:'#ffe0a5',max:chipW-18*unit});
+  }
+  if(project.enabled.seal && project.seal.trim()) {
+    burst(ctx,width-frame-86*unit,shadeTop-11*unit,unit,project.seal.toUpperCase(),warm,cool);
+  }
+  if(showTitle) lockup(ctx,project,width/2,titleY,Math.min(width-111*unit,1400*unit),titleSize,unit,warm,cool);
+  if(project.enabled.quote && project.quote.trim()) {
+    const y=height-125*unit;
+    lettering(ctx,'★ ★ ★ ★ ★',width/2,y,14*unit,{align:'center',color:'#ffca77'});
+    lettering(ctx,`“${project.quote}”`,width/2,y+20*unit,16*unit,
+      {align:'center',font:'Georgia, serif',max:width-180*unit});
+    lettering(ctx,project.credit.toUpperCase(),width/2,y+34*unit,9*unit,
+      {align:'center',color:'#ffadba',max:width-180*unit});
+  }
+  const bottom=height-80*unit;
+  box(ctx,artX,bottom,artW,60*unit,'#221329');
+  box(ctx,artX,bottom,artW,2*unit,warm);
+  const leftOffset=project.enabled.rating?91:23;
+  if(project.enabled.rating) {
+    box(ctx,artX+13*unit,bottom+8*unit,52*unit,43*unit,'#ffe3ab');
+    box(ctx,artX+15*unit,bottom+10*unit,48*unit,39*unit,'#311631');
+    lettering(ctx,project.rating.toUpperCase(),artX+39*unit,bottom+38*unit,28*unit,
+      {align:'center',max:42*unit});
+  }
+  if(project.enabled.billing) {
+    const x=artX+leftOffset*unit;
+    const max=artW-(leftOffset+(project.enabled.barcode?139:22))*unit;
+    lettering(ctx,project.billing.toUpperCase(),x,bottom+26*unit,13*unit,{max,color:'#ffe2b2'});
+    lettering(ctx,'C O R A L   C O U N T Y    /    V O L .  0 1',x,bottom+42*unit,9*unit,
+      {max,color:'#f69baf'});
+  }
+  if(project.enabled.barcode) {
+    const x=width-artX-117*unit;
+    box(ctx,x,bottom+10*unit,103*unit,38*unit,'#ffe7bf');
+    for(let i=0;i<31;i++) box(ctx,x+(6+i*3)*unit,bottom+14*unit,(i%4===0?2:1)*unit,20*unit,'#25172d');
+    lettering(ctx,'0  24680  06120  6',x+51*unit,bottom+44*unit,8*unit,{align:'center',color:'#25172d'});
+  }
+  if(project.enabled.mark && project.mark.trim()) {
+    lettering(ctx,project.mark.toUpperCase(),artX+13*unit,artY+11*unit,8*unit,{color:'#ffedc9',max:94*unit});
+  }
+  ctx.restore();
+  ctx.strokeStyle='#ffb988';ctx.lineWidth=1.5*unit;
+  ctx.strokeRect(artX,artY,artW,artH);
+  ctx.strokeStyle='#ffb98850';
+  ctx.strokeRect(artX-5*unit,artY-5*unit,artW+10*unit,artH+10*unit);
+}
+
+let detector;
+try { if ('FaceDetector' in window) detector=new window.FaceDetector({fastMode:true,maxDetectedFaces:4}); } catch {}
+const knownFocus={
+  'cast-boss':.33,'cast-driver':.36,'cast-insider':.35,'cast-rider':.37
+};
+function decode(blob) {
+  const url=URL.createObjectURL(blob);
+  return new Promise((resolve,reject)=>{
+    const image=new Image();
+    image.onload=()=>{ URL.revokeObjectURL(url);resolve(image); };
+    image.onerror=()=>{ URL.revokeObjectURL(url);reject(new Error('Image could not be decoded')); };
+    image.src=url;
+  });
+}
+function encode(target,type='image/png',quality) {
+  return new Promise((resolve,reject)=>target.toBlob(
+    blob=>blob ? resolve(blob) : reject(new Error('Image could not be encoded')),type,quality));
+}
+async function makeAsset(id,blob,name,upload=false) {
+  let decoded;
+  if (typeof createImageBitmap === 'function') {
+    try { decoded=await createImageBitmap(blob); } catch {}
+  }
+  decoded ??= await decode(blob);
+  const w=decoded.naturalWidth || decoded.width,h=decoded.naturalHeight || decoded.height;
+  const shrink=Math.min(1,2048/Math.max(w,h));
+  const image=document.createElement('canvas');
+  image.width=Math.max(1,Math.round(w*shrink));image.height=Math.max(1,Math.round(h*shrink));
+  try { image.getContext('2d').drawImage(decoded,0,0,image.width,image.height); }
+  finally { decoded.close?.(); }
+  const focus={x:.5,y:knownFocus[id] ?? .46,face:Object.hasOwn(knownFocus,id)};
+  if(detector) {
+    let timeout;
+    try {
+      const faces=await Promise.race([detector.detect(image),new Promise(resolve=>{
+        timeout=setTimeout(()=>resolve([]),550);
+      })]);
+      const largest=faces.reduce((best,{boundingBox:b})=>!best || b.width*b.height>best.width*best.height?b:best,null);
+      if(largest) Object.assign(focus,{x:(largest.x+largest.width/2)/image.width,
+        y:(largest.y+largest.height/2)/image.height,face:true});
+    } catch {} finally { clearTimeout(timeout); }
+  }
+  const thumbnail=document.createElement('canvas');
+  thumbnail.width=56;thumbnail.height=68;
+  drawPhoto(thumbnail.getContext('2d'),{x:0,y:0,w:56,h:68},{image,focus},emptyCrop(),grades['miami-heat'],0);
+  const thumb=URL.createObjectURL(await encode(thumbnail,'image/jpeg',.82));
+  const stored=upload ? await encode(image,'image/webp',.87) : null;
+  photos.set(id,{image,focus,thumb,name,stored});
+}
+async function loadSample(id) {
+  const result=await fetch(samples[id][0]);
+  if(!result.ok) throw new Error('Sample unavailable');
+  await makeAsset(id,await result.blob(),id);
+}
+function database() {
+  dbPromise ??= new Promise((resolve,reject)=>{
+    const request=indexedDB.open(storageKey,1);
+    request.onupgradeneeded=()=>request.result.createObjectStore('photos');
+    request.onsuccess=()=>resolve(request.result);
+    request.onerror=()=>reject(request.error);
+    request.onblocked=()=>reject(new Error('Photo storage is busy'));
+  });
+  return dbPromise;
+}
+async function readUploads() {
+  const db=await database();
+  return new Promise((resolve,reject)=>{
+    const request=db.transaction('photos').objectStore('photos').get('roll');
+    request.onsuccess=()=>resolve(request.result || []);
+    request.onerror=()=>reject(request.error);
+  });
+}
+async function storeUploads(items) {
+  const db=await database();
+  await new Promise((resolve,reject)=>{
+    const tx=db.transaction('photos','readwrite');
+    tx.objectStore('photos').put(items,'roll');
+    tx.oncomplete=resolve;
+    tx.onabort=()=>reject(tx.error);
+  });
+}
+let uploadSave=Promise.resolve();
+function save(rollChanged=false) {
+  if(!ready || !canSave) return;
+  const snapshot=JSON.stringify(state);
+  try { localStorage.setItem(storageKey,snapshot); }
+  catch { status('Autosave is unavailable in this browser.'); }
+  if(rollChanged) {
+    const items=state.roll.flatMap(id=>{
+      const asset=photos.get(id);
+      return asset?.stored ? [{id,name:asset.name,blob:asset.stored}] : [];
+    });
+    uploadSave=uploadSave.then(()=>storeUploads(items)).catch(()=>{
+      if(items.length) status('These uploads could not be saved on this device.');
+    });
+  }
+}
+function restore(saved) {
+  const restored=defaults(saved.roll.filter(id=>photos.has(id)).slice(0,9));
+  for(const key of settings) {
+    if(typeof saved[key]===typeof restored[key]) restored[key]=saved[key];
+  }
+  for(const [key,options] of Object.entries({layout:layouts,grade:grades,titleFont:titleFonts,subFont:subFonts,ratio:sizes})) {
+    if(!Object.hasOwn(options,restored[key])) restored[key]=defaults()[key];
+  }
+  restored.intensity=clamp(restored.intensity,0,100);
+  restored.crops=restored.crops.map((crop,i)=>{
+    const old=saved.crops?.[i];
+    return old ? {
+      photo:restored.roll.includes(old.photo)?old.photo:null,
+      x:clamp(Number(old.x)||0,-100,100),y:clamp(Number(old.y)||0,-100,100),
+      zoom:clamp(Number(old.zoom)||100,100,300),flip:old.flip===true
+    } : crop;
+  });
+  for(const key of Object.keys(toggles)) {
+    if(typeof saved.enabled?.[key]==='boolean') restored.enabled[key]=saved.enabled[key];
+  }
+  return restored;
+}
+function describeRoll() {
+  status(state.roll.length ? `${state.roll.length} / 9 photos · select a thumbnail to assign it` :
+    'Demo mode · six illustrated scenes');
+}
+async function start() {
+  let saved;
+  if(canSave) {
+    try {
+      saved=JSON.parse(localStorage.getItem(storageKey));
+      if(!Array.isArray(saved?.roll)) saved=null;
+    } catch {}
+  }
+  const needed=new Set([...requestedIds,...(saved?.roll || []).filter(id=>Object.hasOwn(samples,id))]);
+  const loading=[...needed].map(loadSample);
+  if(saved?.roll.some(id=>!Object.hasOwn(samples,id))) {
+    loading.push(readUploads().then(items=>Promise.allSettled(items.filter(item=>saved.roll.includes(item.id))
+      .map(item=>makeAsset(item.id,item.blob,item.name,true)))));
+  }
+  const results=await Promise.allSettled(loading);
+  state=saved ? restore(saved) : defaults();
+  if(params.has('caption')) state.title=params.get('caption').slice(0,48);
+  for(const [key,choices] of [['layout',layouts],['grade',grades]]) {
+    const val=params.get(key);
+    if(Object.hasOwn(choices,val)) state[key]=val;
+  }
+  if(params.has('intensity') && params.get('intensity').trim()) {
+    const val=Number(params.get('intensity'));
+    if(Number.isFinite(val)) state.intensity=clamp(val,0,100);
+  }
+  if(!coverOnly && document.fonts) await document.fonts.ready;
+  ready=true;
+  describeRoll();
+  if(results.some(result=>result.status==='rejected') || (saved && state.roll.length<saved.roll.length)) {
+    status('Some photos could not be loaded. Add a JPG, PNG, or WebP to replace them.');
+  }
+  refresh();
+  requestAnimationFrame(()=>requestAnimationFrame(()=>{ window.__shotReady=true; }));
+}
+
+function option(value,label) { return new Option(label,value); }
+function selectOptions(id,choices) {
+  $(id).replaceChildren(...Object.entries(choices).map(([value,label])=>option(value,Array.isArray(label)?label[0]:label)));
+}
+selectOptions('layout',layouts);
+selectOptions('grade',grades);
+selectOptions('titleFont',titleFonts);
+selectOptions('subFont',subFonts);
+for(const [key,label] of Object.entries(toggles)) {
+  const control=document.createElement('label');
+  const input=document.createElement('input');
+  input.type='checkbox';input.id='toggle-'+key;
+  input.addEventListener('change',()=>change(()=>{state.enabled[key]=input.checked;}));
+  control.append(input,' '+label);
+  $('checks').append(control);
+}
+
+function refresh() {
+  const [w,h]=coverOnly ? [innerWidth,innerHeight] : sizes[state.ratio];
+  if(canvas.width!==w || canvas.height!==h) { canvas.width=w;canvas.height=h; }
+  render(canvas,state,true);
+  if(coverOnly) return;
+  selected=clamp(selected,0,regions.length-1);
+  for(const key of settings) if(document.activeElement!==$(key) || $(key).type!=='text') $(key).value=state[key];
+  for(const key of Object.keys(toggles)) $('toggle-'+key).checked=state.enabled[key];
+  $('level').value=Math.round(state.intensity)+'%';
+  $('stageLabel').textContent=layouts[state.layout];
+  $('dimensions').textContent=`${w} × ${h}`;
+  $('undo').disabled=busy || !past.length;$('redo').disabled=busy || !future.length;
+  $('pick').disabled=!ready || busy || state.roll.length>=9;
+  $('remove').disabled=!state.roll.length || busy;
+  $('demo').disabled=!state.roll.length || busy;
+  $('reset').disabled=!ready || busy;
+  $('download').disabled=!ready || busy;$('downloadAll').disabled=!ready || busy;
+  const active=photoId(state,selected);
+  const rollKey=JSON.stringify(state.roll);
+  if(rollKey!==shownRoll) {
+    $('thumbs').replaceChildren(...state.roll.map(id=>{
+      const {name,thumb}=photos.get(id);
+      const button=document.createElement('button'), image=document.createElement('img');
+      button.title=name;button.dataset.photo=id;image.src=thumb;image.alt=name;
+      button.append(image);
+      button.addEventListener('click',()=>change(()=>{state.crops[selected]={...emptyCrop(),photo:id};}));
+      return button;
+    }));
+    $('panelPhoto').replaceChildren(option('','Cycle through roll'),
+      ...state.roll.map(id=>option(id,photos.get(id).name)));
+    shownRoll=rollKey;
+  }
+  for(const item of $('thumbs').children) item.setAttribute('aria-pressed',item.dataset.photo===active);
+  $('panelPhoto').value=state.crops[selected].photo || '';
+  const count=regions.length;
+  if($('panels').children.length!==count) {
+    $('panels').replaceChildren(...Array.from({length:count},(_,i)=>{
+      const button=document.createElement('button');button.textContent=i+1;
+      button.setAttribute('aria-label',`Select panel ${i+1}`);
+      button.addEventListener('click',()=>{finishEdit();selected=i;refresh();});
+      return button;
+    }));
+  }
+  Array.from($('panels').children).forEach((button,i)=>button.setAttribute('aria-pressed',i===selected));
+  $('swap').replaceChildren(option('','Choose panel'),...regions.flatMap((_,i)=>i===selected?[]:[option(i,`Panel ${i+1}`)]));
+  const {x,y,zoom,flip}=state.crops[selected];
+  for(const [key,val] of Object.entries({panX:x,panY:y,zoom})) $(key).value=val;
+  $('flip').setAttribute('aria-pressed',flip);
+  $('flip').textContent=flip?'Unflip':'Flip';
+}
+function snapshot() { return JSON.stringify(state); }
+function commit(before) {
+  if(before===snapshot()) return;
+  past.push(before);
+  if(past.length>40) past.shift();
+  future=[];
+  const rollChanged=JSON.stringify(JSON.parse(before).roll)!==JSON.stringify(state.roll);
+  if(rollChanged) describeRoll();
+  save(rollChanged);
+}
+function finishEdit() {
+  if(!edit) return;
+  commit(edit.before);edit=null;
+  refresh();
+}
+function change(mutate) {
+  if(!ready || coverOnly || busy) return;
+  finishEdit();
+  const before=snapshot();
+  mutate();
+  commit(before);refresh();
+}
+function history(from,to) {
+  if(busy) return;
+  finishEdit();
+  if(!from.length) return;
+  const old=JSON.stringify(state.roll);
+  to.push(snapshot());state=JSON.parse(from.pop());
+  const rollChanged=old!==JSON.stringify(state.roll);
+  if(rollChanged) describeRoll();
+  save(rollChanged);refresh();
+}
+$('undo').onclick=()=>history(past,future);
+$('redo').onclick=()=>history(future,past);
+$('reset').onclick=()=>change(()=>{state=defaults();selected=0;});
+$('demo').onclick=()=>change(()=>{state.roll=[];state.crops=Array.from({length:9},emptyCrop);});
+$('remove').onclick=()=>change(()=>{
+  const id=photoId(state,selected);
+  state.roll=state.roll.filter(photo=>photo!==id);
+  state.crops=state.crops.map(crop=>crop.photo===id?emptyCrop():crop);
+});
+$('surprise').onclick=()=>change(()=>{
+  const different=(items,current)=>{
+    const candidates=Object.keys(items).filter(value=>value!==current);
+    return candidates[Math.floor(Math.random()*candidates.length)];
+  };
+  state.layout=different(layouts,state.layout);
+  state.grade=different(grades,state.grade);
+  state.intensity=75+Math.floor(Math.random()*26);
+  for(let i=state.roll.length-1;i>0;i--) {
+    const j=Math.floor(Math.random()*(i+1));
+    [state.roll[i],state.roll[j]]=[state.roll[j],state.roll[i]];
+  }
+  state.crops=Array.from({length:9},emptyCrop);
+});
+for(const key of settings) {
+  const control=$(key);
+  if(control.tagName==='SELECT') {
+    control.addEventListener('change',()=>change(()=>{state[key]=control.value;}));
+  } else bindEdit(control,()=>{state[key]=key==='intensity'?Number(control.value):control.value;});
+}
+function bindEdit(control,apply) {
+  control.addEventListener('input',()=>{
+    if(!ready) return;
+    if(edit?.control!==control) {
+      const value=control.value;
+      finishEdit();
+      control.value=value;
+      edit={control,before:snapshot()};
+    }
+    apply();save();refresh();
+  });
+  control.addEventListener('change',finishEdit);
+  control.addEventListener('blur',finishEdit);
+}
+for(const [control,key] of [['panX','x'],['panY','y'],['zoom','zoom']]) {
+  bindEdit($(control),()=>{state.crops[selected][key]=Number($(control).value);});
+}
+$('panelPhoto').onchange=event=>{
+  const photo=event.target.value || null;
+  change(()=>{state.crops[selected]={...emptyCrop(),photo};});
+};
+$('flip').onclick=()=>change(()=>{state.crops[selected].flip=!state.crops[selected].flip;});
+$('cropReset').onclick=()=>change(()=>{state.crops[selected]={...emptyCrop(),photo:state.crops[selected].photo};});
+$('swap').onchange=event=>{
+  if(event.target.value==='') return;
+  const other=Number(event.target.value);
+  change(()=>{
+    const a={...state.crops[selected],photo:photoId(state,selected) ?? null};
+    const b={...state.crops[other],photo:photoId(state,other) ?? null};
+    state.crops[selected]=b;state.crops[other]=a;
+  });
+};
+
+async function addFiles(list) {
+  if(!ready || coverOnly || busy || !list.length) return;
+  const slots=9-state.roll.length;
+  if(!slots) { status('The roll holds nine photos. Remove a photo to add another.');return; }
+  busy=true;refresh();
+  status('Preparing photos…');
+  const added=[], warnings=[];
+  for(const file of list) {
+    if(added.length>=slots) {
+      warnings.push('The roll is full.');break;
+    }
+    if(file.size>100*1024*1024) {
+      warnings.push(`${file.name} is over 100 MB. Resize it and try again.`);continue;
+    }
+    const id='upload-'+(globalThis.crypto?.randomUUID?.() ?? Date.now()+'-'+Math.random());
+    try {
+      await makeAsset(id,file,file.name || 'Pasted photo',true);
+      added.push(id);
+    } catch {
+      warnings.push(/hei[cf]/i.test(file.type+' '+file.name) ?
+        'This browser could not open HEIC. Convert it to JPG or PNG and try again.' :
+        `Could not open ${file.name || 'that image'}. Try JPG, PNG, or WebP.`);
+    }
+  }
+  busy=false;
+  if(added.length) change(()=>{
+    state.roll.push(...added);
+    state.crops[selected]={...emptyCrop(),photo:added[0]};
+  });
+  refresh();
+  if(warnings.length) status([...new Set(warnings)].join(' '));
+}
+$('pick').onclick=()=>$('files').click();
+$('files').onchange=event=>{
+  addFiles([...event.target.files]);event.target.value='';
+};
+const hasFiles=event=>Array.from(event.dataTransfer?.types || []).includes('Files');
+window.addEventListener('dragover',event=>{
+  if(!coverOnly && hasFiles(event)) {
+    event.preventDefault();document.body.classList.add('dragging');
+  }
+});
+window.addEventListener('dragleave',event=>{
+  if(!event.relatedTarget) document.body.classList.remove('dragging');
+});
+window.addEventListener('drop',event=>{
+  if(coverOnly || !hasFiles(event)) return;
+  event.preventDefault();document.body.classList.remove('dragging');
+  addFiles([...event.dataTransfer.files]);
+});
+window.addEventListener('paste',event=>{
+  if(coverOnly) return;
+  const images=[...event.clipboardData.items].filter(item=>item.kind==='file' && item.type.startsWith('image/'))
+    .map(item=>item.getAsFile()).filter(Boolean);
+  if(images.length) { event.preventDefault();addFiles(images); }
+});
+function point(event) {
+  const rect=canvas.getBoundingClientRect();
+  return [(event.clientX-rect.left)*canvas.width/rect.width,(event.clientY-rect.top)*canvas.height/rect.height];
+}
+canvas.addEventListener('pointerdown',event=>{
+  if(!ready || coverOnly || event.button!==0 || drag) return;
+  const [x,y]=point(event), ctx=canvas.getContext('2d');
+  const hit=regions.findIndex(poly=>{ path(ctx,poly);return ctx.isPointInPath(x,y); });
+  if(hit<0) return;
+  finishEdit();
+  selected=hit;
+  const crop=state.crops[selected];
+  drag={id:event.pointerId,x,y,before:snapshot(),panX:crop.x,panY:crop.y};
+  canvas.setPointerCapture(event.pointerId);
+  refresh();
+});
+canvas.addEventListener('pointermove',event=>{
+  if(drag?.id!==event.pointerId) return;
+  const [x,y]=point(event), r=bounds(regions[selected]);
+  const crop=state.crops[selected], asset=photos.get(photoId(state,selected));
+  if(!asset) return;
+  const scale=Math.max(r.w/asset.image.width,r.h/asset.image.height)*crop.zoom/100;
+  const travelX=Math.max(1,asset.image.width*scale-r.w),travelY=Math.max(1,asset.image.height*scale-r.h);
+  crop.x=clamp(Math.round(drag.panX+(x-drag.x)/travelX*(crop.flip?-100:100)),-100,100);
+  crop.y=clamp(Math.round(drag.panY+(y-drag.y)/travelY*100),-100,100);
+  refresh();
+});
+for(const type of ['pointerup','pointercancel','lostpointercapture']) canvas.addEventListener(type,event=>{
+  if(drag?.id!==event.pointerId) return;
+  commit(drag.before);drag=null;refresh();
+});
+function zoomBy(amount) {
+  change(()=>{const crop=state.crops[selected];crop.zoom=clamp(crop.zoom+amount,100,300);});
+}
+canvas.addEventListener('wheel',event=>{
+  if(!coverOnly && event.shiftKey) { event.preventDefault();zoomBy(event.deltaY>0?-8:8); }
+},{passive:false});
+window.addEventListener('keydown',event=>{
+  if(coverOnly || !ready) return;
+  const command=event.ctrlKey || event.metaKey;
+  const key=event.key.toLowerCase();
+  if(command && key==='s') { event.preventDefault();exportFiles(false);return; }
+  if(event.target.closest?.('input,select,textarea,[contenteditable]')) return;
+  if(command && (key==='z' || key==='y')) {
+    event.preventDefault();
+    if(key==='y' || event.shiftKey) history(future,past);
+    else history(past,future);
+    return;
+  }
+  if(command || event.altKey) return;
+  if(/^[1-9]$/.test(key) && Number(key)<=regions.length) {
+    finishEdit();selected=Number(key)-1;refresh();
+  } else if(key==='f') $('flip').click();
+  else if(['+','=','-'].includes(key)) zoomBy(key==='-'?-8:8);
+  else if(['arrowleft','arrowright','arrowup','arrowdown'].includes(key)) {
+    event.preventDefault();
+    change(()=>{
+      const crop=state.crops[selected], step=event.shiftKey?12:4;
+      if(key==='arrowleft' || key==='arrowright') crop.x=clamp(crop.x+(key==='arrowleft'?-step:step)*(crop.flip?-1:1),-100,100);
+      else crop.y=clamp(crop.y+(key==='arrowup'?-step:step),-100,100);
+    });
+  }
+});
+
+const crcTable=Uint32Array.from({length:256},(_,i)=>{
+  for(let bit=0;bit<8;bit++) i=(i>>>1)^((i&1)?0xedb88320:0);
+  return i;
+});
+function crc32(bytes) {
+  let crc=0xffffffff;
+  for(const byte of bytes) crc=(crc>>>8)^crcTable[(crc^byte)&255];
+  return (crc^0xffffffff)>>>0;
+}
+async function zipPngs(entries) {
+  const blocks=[], directory=[];
+  let offset=0, directorySize=0;
+  for(const [filename,blob] of entries) {
+    const name=new TextEncoder().encode(filename);
+    const bytes=new Uint8Array(await blob.arrayBuffer());
+    const crc=crc32(bytes);
+    const local=new Uint8Array(30+name.length);
+    const header=new DataView(local.buffer);
+    header.setUint32(0,0x04034b50,true);header.setUint16(4,20,true);
+    header.setUint16(12,33,true);
+    header.setUint32(14,crc,true);header.setUint32(18,bytes.length,true);
+    header.setUint32(22,bytes.length,true);header.setUint16(26,name.length,true);
+    local.set(name,30);
+    const record=new Uint8Array(46+name.length);
+    const central=new DataView(record.buffer);
+    central.setUint32(0,0x02014b50,true);
+    central.setUint16(4,20,true);central.setUint16(6,20,true);central.setUint16(14,33,true);
+    central.setUint32(16,crc,true);central.setUint32(20,bytes.length,true);
+    central.setUint32(24,bytes.length,true);central.setUint16(28,name.length,true);
+    central.setUint32(42,offset,true);record.set(name,46);
+    blocks.push(local,bytes);directory.push(record);
+    offset+=local.length+bytes.length;directorySize+=record.length;
+  }
+  const end=new DataView(new ArrayBuffer(22));
+  end.setUint32(0,0x06054b50,true);
+  end.setUint16(8,entries.length,true);end.setUint16(10,entries.length,true);
+  end.setUint32(12,directorySize,true);end.setUint32(16,offset,true);
+  return new Blob([...blocks,...directory,end.buffer],{type:'application/zip'});
+}
+function download(blob,name) {
+  const anchor=document.createElement('a');
+  const url=URL.createObjectURL(blob);
+  anchor.href=url;anchor.download=name;
+  document.body.append(anchor);anchor.click();anchor.remove();
+  setTimeout(()=>URL.revokeObjectURL(url),30000);
+}
+async function exportFiles(all) {
+  if(busy || !ready) return;
+  finishEdit();
+  const project=JSON.parse(snapshot());
+  const base=project.title.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'') || 'coral-heat';
+  busy=true;refresh();status('Rendering export…');
+  try {
+    const output=document.createElement('canvas'), entries=[];
+    for(const ratio of all?Object.keys(sizes):[project.ratio]) {
+      [output.width,output.height]=sizes[ratio];
+      render(output,project);
+      entries.push([`${base}-${output.width}x${output.height}.png`,await encode(output)]);
+    }
+    if(all) download(await zipPngs(entries),`${base}-covers.zip`);
+    else download(entries[0][1],entries[0][0]);
+    status(all?'Three PNGs packed into a ZIP.':'PNG ready.');
+  } catch { status('Export failed. Try downloading one cover at a time.'); }
+  finally { busy=false;refresh(); }
+}
+$('download').onclick=()=>exportFiles(false);
+$('downloadAll').onclick=()=>exportFiles(true);
+if(coverOnly) addEventListener('resize',()=>{if(ready) refresh();});
+refresh();
+start().catch(()=>{
+  ready=true;
+  status('The photo roll could not be loaded. You can still start from the demo.');
+  refresh();
+  requestAnimationFrame(()=>{window.__shotReady=true;});
+});
+</script>
+</body>
+</html>
